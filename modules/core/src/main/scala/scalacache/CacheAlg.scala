@@ -5,9 +5,10 @@ import cats.Monad
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
 
-// TODO codecs (but not here)
 // TODO key should be a list of key parts
 // TODO implicit flags
+// TODO other config
+// TODO memoization
 
 trait CacheAlg[F[_], V] {
 

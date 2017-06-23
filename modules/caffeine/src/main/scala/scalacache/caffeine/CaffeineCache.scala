@@ -1,12 +1,13 @@
 package scalacache.caffeine
 
+import cats.Id
 import com.github.benmanes.caffeine.cache.Cache
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
-import scalacache.CacheAlg
+import scalacache.{CacheAlg, Modes}
 
-abstract class CaffeineCache[F[_], V <: Object](underlying: Cache[String, Object]) extends CacheAlg[F, V] {
+abstract class CaffeineCache[F[_], V <: Object](underlying: Cache[String, V]) extends CacheAlg[F, V] {
 
   def get(key: String): F[Option[V]] =
     point(Option.apply(underlying.getIfPresent(key).asInstanceOf[V]))
@@ -15,3 +16,5 @@ abstract class CaffeineCache[F[_], V <: Object](underlying: Cache[String, Object
     point(underlying.put(key, value))
 
 }
+
+case class SyncCaffeineCache[V <: Object](underlying: Cache[String, V]) extends CaffeineCache[Id, V](underlying) with Modes.Sync
