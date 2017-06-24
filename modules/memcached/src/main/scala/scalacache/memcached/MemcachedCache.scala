@@ -4,14 +4,14 @@ import net.spy.memcached.MemcachedClient
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
-import scalacache.CacheAlg
+import scalacache.{AbstractCache, CacheConfig}
 import scalacache.serialization.Codec
 
 abstract class MemcachedCache[F[_], V](
                                         client: MemcachedClient,
                                         keySanitizer: MemcachedKeySanitizer = ReplaceAndTruncateSanitizer())
-                                      (implicit codec: Codec[V, Array[Byte]])
-  extends CacheAlg[F, V]
+                                      (implicit val config: CacheConfig, codec: Codec[V, Array[Byte]])
+  extends AbstractCache[F, V]
   with MemcachedTTLConverter {
 
   def get(key: String) = point {
