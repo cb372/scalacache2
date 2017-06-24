@@ -17,7 +17,12 @@ object Example extends App {
     println(s"Get: ${userCache.get("chris")}")
     println(s"Put: ${userCache.put("chris", User(123, "Chris"))}")
     println(s"Get: ${userCache.get("chris")}")
+
+    println(s"Caching: ${userCache.caching("dave")(){ User(456, "Dave") }}")
+    println(s"CachingF: ${userCache.caching("bob")(){ User(789, "Bob") }}")
   }
+
+  println("---")
 
   {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -28,6 +33,8 @@ object Example extends App {
     println(s"Put: ${Await.result(userCache.put("chris", User(123, "Chris")), Duration.Inf)}")
     println(s"Get: ${Await.result(userCache.get("chris"), Duration.Inf)}")
 
+    println(s"Caching: ${Await.result(userCache.caching("dave")(){ User(456, "Dave") }, Duration.Inf)}")
+    println(s"Caching: ${Await.result(userCache.cachingF("bob")(){ Future { Thread.sleep(10000); User(789, "Bob") } }, Duration.Inf)}")
   }
 
 }

@@ -23,16 +23,23 @@ trait CacheAlg[F[_], V] {
   import cats.syntax.functor._
   import cats.syntax.flatMap._
 
-  def caching(key: String)(ttl: Option[Duration] = None)(f: => V): F[V] = {
+  def caching(key: String)(ttl: Option[Duration] = None)(f: => V): F[V] =
+    cachingF(key)(ttl)(M.pure(f))
+
+  def cachingF(key: String)(ttl: Option[Duration] = None)(f: => F[V]): F[V] = {
     get(key).flatMap {
       case Some(valueFromCache) =>
         // TODO logging?
+        println(s"Cache hit for key $key")
         M.pure(valueFromCache)
       case None =>
         // TODO logging?
-        val calculatedValue = f
-        put(key, calculatedValue, ttl)
-          .map(_ => calculatedValue)
+        println(s"Cache miss for key $key, calculating value")
+        f.flatMap { calculatedValue =>
+          println("Calculated value")
+          put(key, calculatedValue, ttl)
+            .map(_ => calculatedValue)
+        }
     }
   }
 
