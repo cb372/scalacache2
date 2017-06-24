@@ -14,7 +14,7 @@ abstract class MemcachedCache[F[_], V](
   extends AbstractCache[F, V]
   with MemcachedTTLConverter {
 
-  def get(key: String) = point {
+  def getWithKey(key: String) = point {
     val bytes = client.get(keySanitizer.toValidMemcachedKey(key))
     if (bytes == null)
       None
@@ -22,7 +22,7 @@ abstract class MemcachedCache[F[_], V](
       Some(codec.decode(bytes.asInstanceOf[Array[Byte]]))
   }
 
-  def put(key: String, value: V, ttl: Option[Duration]) = point {
+  def putWithKey(key: String, value: V, ttl: Option[Duration]) = point {
     val bytes = codec.encode(value)
     client.set(key, toMemcachedExpiry(ttl), bytes).get()
   }

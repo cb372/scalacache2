@@ -17,7 +17,7 @@ object Example extends App {
   val underlying = new MemcachedClient(new BinaryConnectionFactory(), AddrUtil.getAddresses("localhost:11211"))
   val userCache = new MemcachedCache[Future, User](underlying) with Modes.ScalaFuture { val ec = global }
 
-  println(Await.result(userCache.put("chris", User(123, "Chris")), Duration.Inf))
+  println(Await.result(userCache.put("chris")(User(123, "Chris")), Duration.Inf))
   println(Await.result(userCache.get("chris"), Duration.Inf))
 
   underlying.shutdown()
