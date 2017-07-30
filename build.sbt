@@ -1,7 +1,8 @@
 
 val commonSettings = Seq(
   organization := "org.scalacache",
-  scalaVersion := "2.12.2"
+  scalaVersion := "2.12.2",
+  scalacOptions += "-feature"
 )
 
 val moduleSettings = commonSettings ++ Seq(

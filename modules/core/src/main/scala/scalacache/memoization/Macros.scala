@@ -7,15 +7,15 @@ import scala.reflect.macros.blackbox
 class Macros(val c: blackbox.Context) {
   import c.universe._
 
-  def memoize[F[_], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree): Tree = {
+  def memoize[F[_], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
     commonMacroImpl(cache, { keyName =>
-      q"""$cache.caching($keyName)($ttl)($f)"""
+      q"""$cache.caching($keyName)($ttl)($f)($mode)"""
     })
   }
 
-  def memoizeF[F[_], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree): Tree = {
+  def memoizeF[F[_], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
     commonMacroImpl(cache, { keyName =>
-      q"""$cache.cachingF($keyName)($ttl)($f)"""
+      q"""$cache.cachingF($keyName)($ttl)($f)($mode)"""
     })
   }
 

@@ -4,7 +4,7 @@ import com.github.benmanes.caffeine.cache.Caffeine
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scalacache.caffeine.{CaffeineCache, SyncCaffeineCache}
+import scalacache.caffeine.CaffeineCache
 
 case class User(id: Int, name: String)
 
@@ -13,8 +13,9 @@ object Example extends App {
   implicit val cacheConfig = CacheConfig()
 
   {
+    import scalacache.modes.sync._
     val underlying = Caffeine.newBuilder().build[String, User]()
-    val userCache = new SyncCaffeineCache[User](underlying)
+    val userCache = new CaffeineCache[User](underlying)
 
     println(s"Get: ${userCache.get("chris")}")
     println(s"Put: ${userCache.put("chris")(User(123, "Chris"))}")
@@ -28,14 +29,20 @@ object Example extends App {
 
   {
     import scala.concurrent.ExecutionContext.Implicits.global
+    import scalacache.modes.scalaFuture._
     val underlying = Caffeine.newBuilder().build[String, User]()
-    val userCache = new CaffeineCache[Future, User](underlying) with Modes.ScalaFuture { val ec = global }
+    val userCache = new CaffeineCache[User](underlying)
 
-    println(s"Get: ${Await.result(userCache.get("chris"), Duration.Inf)}")
-    println(s"Put: ${Await.result(userCache.put("chris")(User(123, "Chris")), Duration.Inf)}")
-    println(s"Get: ${Await.result(userCache.get("chris"), Duration.Inf)}")
+    val get1 = userCache.get("chris")
+    println(s"Get: ${Await.result(get1, Duration.Inf)}")
 
-    println(s"Caching: ${Await.result(userCache.caching("dave")(){ User(456, "Dave") }, Duration.Inf)}")
+    val put1 = userCache.put("chris")(User(123, "Chris"))
+    println(s"Put: ${Await.result(put1, Duration.Inf)}")
+
+    val get2 = userCache.get("chris")
+    println(s"Get: ${Await.result(get2, Duration.Inf)}")
+
+    println(s"Caching: ${Await.result(userCache.caching[Future]("dave")(){ User(456, "Dave") }, Duration.Inf)}")
     println(s"Caching: ${Await.result(userCache.cachingF("bob")(){ Future { Thread.sleep(1000); User(789, "Bob") } }, Duration.Inf)}")
   }
 
@@ -43,8 +50,9 @@ object Example extends App {
 
   {
     import scala.concurrent.ExecutionContext.Implicits.global
+    import scalacache.modes.scalaFuture._
     val underlying = Caffeine.newBuilder().build[String, User]()
-    val userCache = new CaffeineCache[Future, User](underlying) with Modes.ScalaFuture { val ec = global }
+    val userCache = new CaffeineCache[User](underlying)
 
     import scalacache.memoization._
     def getUser(id: Int): Future[User] = memoize(userCache, None){ User(id, "the user")}

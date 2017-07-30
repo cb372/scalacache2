@@ -4,17 +4,17 @@ import net.spy.memcached.MemcachedClient
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
-import scalacache.{AbstractCache, CacheConfig}
+import scalacache.{AbstractCache, CacheConfig, Mode}
 import scalacache.serialization.Codec
 
-abstract class MemcachedCache[F[_], V](
+class MemcachedCache[V](
                                         client: MemcachedClient,
                                         keySanitizer: MemcachedKeySanitizer = ReplaceAndTruncateSanitizer())
                                       (implicit val config: CacheConfig, codec: Codec[V, Array[Byte]])
-  extends AbstractCache[F, V]
+  extends AbstractCache[V]
   with MemcachedTTLConverter {
 
-  def getWithKey(key: String) = point {
+  def getWithKey[F[_]](key: String)(implicit mode: Mode[F]): F[Option[V]] = mode.point {
     val bytes = client.get(keySanitizer.toValidMemcachedKey(key))
     if (bytes == null)
       None
@@ -22,7 +22,7 @@ abstract class MemcachedCache[F[_], V](
       Some(codec.decode(bytes.asInstanceOf[Array[Byte]]))
   }
 
-  def putWithKey(key: String, value: V, ttl: Option[Duration]) = point {
+  def putWithKey[F[_]](key: String, value: V, ttl: Option[Duration])(implicit mode: Mode[F]): F[Unit] = mode.point {
     val bytes = codec.encode(value)
     client.set(key, toMemcachedExpiry(ttl), bytes).get()
   }

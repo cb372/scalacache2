@@ -1,33 +1,24 @@
 package scalacache.caffeine
 
-import cats.Id
 import com.github.benmanes.caffeine.cache.Cache
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
-import scalacache.{AbstractCache, CacheConfig, Modes}
+import scalacache.{AbstractCache, CacheConfig, Mode}
 
-abstract class CaffeineCache[F[_], V <: Object](underlying: Cache[String, V])
+class CaffeineCache[V <: Object](underlying: Cache[String, V])
                                                (implicit val config: CacheConfig)
-  extends AbstractCache[F, V] {
+  extends AbstractCache[V] {
 
-  def getWithKey(key: String): F[Option[V]] = {
+  def getWithKey[F[_]](key: String)(implicit mode: Mode[F]): F[Option[V]] = {
     println(s"Get with key $key")
-    point(Option.apply(underlying.getIfPresent(key)))
+    // TODO logging
+    mode.point(Option.apply(underlying.getIfPresent(key)))
   }
 
-  def putWithKey(key: String, value: V, ttl: Option[Duration] = None): F[Unit] =
-    point(underlying.put(key, value))
+  def putWithKey[F[_]](key: String, value: V, ttl: Option[Duration] = None)(implicit mode: Mode[F]): F[Unit] =
+    mode.point(underlying.put(key, value))
 
 }
 
-case class SyncCaffeineCache[V <: Object](underlying: Cache[String, V])
-                                         (override implicit val config: CacheConfig)
-  extends CaffeineCache[Id, V](underlying)
-  with Modes.Sync {
-
-  override def cachingF(keyParts: Any*)(ttl: Option[Duration])(f: => Id[V]) =
-    // delegate the "get or else put" logic to caffeine, as it's probably faster (TODO benchmark this)
-    underlying.get(toKey(keyParts), _ => f)
-
-}
+// TODO factory methods in companion object
