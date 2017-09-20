@@ -6,10 +6,10 @@ import scala.language.higherKinds
 
 package object memoization {
 
-  def memoize[F[_], V](cache: CacheAlg[V], ttl: Option[Duration])(f: => V)(implicit mode: Mode[F]): F[V] =
-    macro Macros.memoize[F, V]
+  def memoize[F[_], M[G[_]] <: MonadError[G], V](cache: CacheAlg[V, M], ttl: Option[Duration])(f: => V)(implicit mode: Mode[F, M]): F[V] =
+    macro Macros.memoize[F, M, V]
 
-  def memoizeF[F[_], V](cache: CacheAlg[V], ttl: Option[Duration])(f: => F[V])(implicit mode: Mode[F]): F[V] =
-    macro Macros.memoizeF[F, V]
+  def memoizeF[F[_], M[G[_]] <: MonadError[G], V](cache: CacheAlg[V, M], ttl: Option[Duration])(f: => F[V])(implicit mode: Mode[F, M]): F[V] =
+    macro Macros.memoizeF[F, M, V]
 
 }

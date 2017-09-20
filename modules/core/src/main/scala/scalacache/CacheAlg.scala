@@ -6,27 +6,23 @@ import scala.language.higherKinds
 
 // TODO implicit flags
 
-trait CacheAlg[V] {
+trait CacheAlg[V, M[F[_]] <: MonadError[F]] {
 
-  def get[F[_]](keyParts: Any*)(implicit mode: Mode[F]): F[Option[V]]
+  def get[F[_]](keyParts: Any*)(implicit mode: Mode[F, M]): F[Option[V]]
 
-  def put[F[_]](keyParts: Any*)(value: V, ttl: Option[Duration] = None)(implicit mode: Mode[F]): F[Unit]
+  def put[F[_]](keyParts: Any*)(value: V, ttl: Option[Duration] = None)(implicit mode: Mode[F, M]): F[Unit]
 
-  import cats.syntax.functor._
-  import cats.syntax.flatMap._
-
-  def caching[F[_]](keyParts: Any*)(ttl: Option[Duration] = None)(f: => V)(implicit mode: Mode[F]): F[V] =
+  def caching[F[_]](keyParts: Any*)(ttl: Option[Duration] = None)(f: => V)(implicit mode: Mode[F, M]): F[V] =
     cachingF(keyParts: _*)(ttl)(mode.M.pure(f))
 
-  def cachingF[F[_]](keyParts: Any*)(ttl: Option[Duration] = None)(f: => F[V])(implicit mode: Mode[F]): F[V] = {
+  def cachingF[F[_]](keyParts: Any*)(ttl: Option[Duration] = None)(f: => F[V])(implicit mode: Mode[F, M]): F[V] = {
     import mode._
-    get(keyParts: _*).flatMap {
+    M.flatMap(get(keyParts: _*)){
       case Some(valueFromCache) =>
         M.pure(valueFromCache)
       case None =>
-        f.flatMap { calculatedValue =>
-          put(keyParts: _*)(calculatedValue, ttl)
-            .map(_ => calculatedValue)
+        M.flatMap(f) { calculatedValue =>
+          M.map(put(keyParts: _*)(calculatedValue, ttl))(_ => calculatedValue)
         }
     }
   }
