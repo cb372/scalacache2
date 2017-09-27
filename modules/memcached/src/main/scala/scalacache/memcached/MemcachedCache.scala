@@ -3,7 +3,7 @@ package scalacache.memcached
 import java.io.IOException
 
 import net.spy.memcached.MemcachedClient
-import net.spy.memcached.internal.{GetCompletionListener, GetFuture}
+import net.spy.memcached.internal.{GetCompletionListener, GetFuture, OperationCompletionListener, OperationFuture}
 
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
@@ -18,7 +18,7 @@ class MemcachedCache[V](
   extends AbstractCache[V, MonadErrorAsync]
   with MemcachedTTLConverter {
 
-  def getWithKey[F[_]](key: String)(implicit mode: Mode[F, MonadErrorAsync]): F[Option[V]] = {
+  protected def getWithKey[F[_]](key: String)(implicit mode: Mode[F, MonadErrorAsync]): F[Option[V]] = {
     import mode._
 
     M.async { cb =>
@@ -47,11 +47,25 @@ class MemcachedCache[V](
     }
   }
 
-  def putWithKey[F[_]](key: String, value: V, ttl: Option[Duration])(implicit mode: Mode[F, MonadErrorAsync]): F[Unit] = {
+  protected def putWithKey[F[_]](key: String, value: V, ttl: Option[Duration])(implicit mode: Mode[F, MonadErrorAsync]): F[Unit] = {
     import mode._
 
-    val bytes = codec.encode(value)
-    M.pure(client.set(key, toMemcachedExpiry(ttl), bytes).get()) // TODO can do this async with a listener
+    M.async { cb =>
+      def success(): Unit = cb(Right(()))
+      def error(e: Throwable): Unit = cb(Left(e))
+
+      val bytes = codec.encode(value)
+      val f = client.set(keySanitizer.toValidMemcachedKey(key), toMemcachedExpiry(ttl), bytes)
+      f.addListener(new OperationCompletionListener {
+        def onComplete(g: OperationFuture[_]): Unit = {
+          if (g.getStatus.isSuccess) {
+            success()
+          } else {
+            error(new IOException(g.getStatus.getMessage))
+          }
+        }
+      })
+    }
   }
 
 }

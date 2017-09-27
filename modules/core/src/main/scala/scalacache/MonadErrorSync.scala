@@ -1,14 +1,16 @@
 package scalacache
 
-import cats.Id
-
+import scalacache.modes.sync.Id
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.language.higherKinds
 import scala.util.control.NonFatal
 
-trait MonadError[F[_]] {
+// TODO the instances for Id and Future below are pretty dodgy monad-wise - rename to just Sync and Async?
+trait MonadErrorSync[F[_]] {
 
   def pure[A](a: A): F[A]
+
+  def delay[A](thunk: => A): F[A]
 
   def map[A, B](fa: F[A])(f: A => B): F[B]
 
@@ -22,13 +24,15 @@ trait MonadError[F[_]] {
     }
 }
 
-trait MonadErrorAsync[F[_]] extends MonadError[F] {
+trait MonadErrorAsync[F[_]] extends MonadErrorSync[F] {
   def async[A](register: (Either[Throwable, A] => Unit) => Unit): F[A]
 }
 
-object MonadErrorForId extends MonadError[Id] {
+object MonadErrorForId extends MonadErrorSync[Id] {
 
   def pure[A](a: A): Id[A] = a
+
+  def delay[A](thunk: => A): Id[A] = thunk
 
   def map[A, B](fa: Id[A])(f: A => B): Id[B] = f(fa)
 
@@ -42,13 +46,16 @@ class MonadErrorAsyncForFuture(implicit ec: ExecutionContext) extends MonadError
 
   def pure[A](a: A): Future[A] = Future.successful(a)
 
+  // note: the Future will start immediately so this does not actually delay the side-effect
+  def delay[A](thunk: => A): Future[A] = Future(thunk)
+
   def map[A, B](fa: Future[A])(f: A => B): Future[B] = fa.map(f)
 
   def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] = fa.flatMap(f)
 
   def error[A](t: Throwable): Future[A] = Future.failed(t)
 
-  def async[A](register: ((Either[Throwable, A]) => Unit) => Unit): Future[A] = {
+  def async[A](register: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
     val promise = Promise[A]()
     register {
       case Left(t)  => promise.failure(t)

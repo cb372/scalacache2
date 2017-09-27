@@ -42,3 +42,20 @@ lazy val memcached = module("memcached")
       "net.spy" % "spymemcached" % "2.12.1"
     )
   ).dependsOn(core)
+
+lazy val catsEffect = module("cats-effect")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.typelevel" %% "cats-effect" % "0.4"
+    )
+  ).dependsOn(core)
+
+lazy val monix = module("monix")
+  .settings(
+    libraryDependencies ++= Seq(
+      "io.monix" %% "monix" % "3.0.0-M1"
+    )
+  ).dependsOn(core, catsEffect)
+
+lazy val example = module("example")
+  .dependsOn(memcached, catsEffect, monix)

@@ -3,7 +3,7 @@ package scalacache
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.higherKinds
 
-trait Mode[F[_], +M[G[_]] <: MonadError[G]] {
+trait Mode[F[_], +M[G[_]] <: MonadErrorSync[G]] {
 
   def M: M[F]
 
@@ -15,8 +15,8 @@ object modes {
 
     type Id[X] = X
 
-    implicit val mode: Mode[Id, MonadError] = new Mode[Id, MonadError] {
-      val M: MonadError[Id] = MonadErrorForId
+    implicit val mode: Mode[Id, MonadErrorSync] = new Mode[Id, MonadErrorSync] {
+      val M: MonadErrorSync[Id] = MonadErrorForId
     }
   }
 

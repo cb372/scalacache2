@@ -6,7 +6,7 @@ import scala.language.higherKinds
 
 // TODO implicit flags
 
-trait CacheAlg[V, M[F[_]] <: MonadError[F]] {
+trait CacheAlg[V, M[F[_]] <: MonadErrorSync[F]] {
 
   def get[F[_]](keyParts: Any*)(implicit mode: Mode[F, M]): F[Option[V]]
 
