@@ -3,25 +3,25 @@ package scalacache.memoization
 import scala.language.experimental.macros
 import scala.language.higherKinds
 import scala.reflect.macros.blackbox
-import scalacache.MonadErrorSync
+import scalacache.Sync
 
 class Macros(val c: blackbox.Context) {
   import c.universe._
 
-  def memoize[F[_], M[G[_]] <: MonadErrorSync[G], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
+  def memoize[F[_], G[_], S[X[_]] <: Sync[X], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
     commonMacroImpl(cache, { keyName =>
       q"""$cache.caching($keyName)($ttl)($f)($mode)"""
     })
   }
 
-  def memoizeF[F[_], M[G[_]] <: MonadErrorSync[G], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
+  def memoizeF[F[_], G[_], S[X[_]] <: Sync[X], V](cache: c.Tree, ttl: c.Tree)(f: c.Tree)(mode: c.Tree): Tree = {
     commonMacroImpl(cache, { keyName =>
       q"""$cache.cachingF($keyName)($ttl)($f)($mode)"""
     })
   }
 
 
-  private def commonMacroImpl[F[_], M[G[_]] <: MonadErrorSync[G], V: c.WeakTypeTag](cache: c.Tree, keyNameToCachingCall: (c.TermName) => c.Tree): Tree = {
+  private def commonMacroImpl[F[_], G[_], S[X[_]] <: Sync[G], V: c.WeakTypeTag](cache: c.Tree, keyNameToCachingCall: (c.TermName) => c.Tree): Tree = {
 
     val enclosingMethodSymbol = findMethodSymbol()
     val classSymbol = findClassSymbol()

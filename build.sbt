@@ -17,7 +17,7 @@ val moduleSettings = commonSettings ++ Seq(
 
 lazy val root = project.in(file("."))
   .settings(commonSettings)
-  .aggregate(core, caffeine, memcached)
+  .aggregate(core, caffeine, memcached, example)
 
 def module(name: String) = Project(s"$name", file(s"modules/$name"))
   .settings(moduleSettings)

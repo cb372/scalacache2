@@ -30,6 +30,7 @@ object Example extends App {
   {
     import scala.concurrent.ExecutionContext.Implicits.global
     import scalacache.modes.scalaFuture._
+
     val underlying = Caffeine.newBuilder().build[String, User]()
     val userCache = new CaffeineCache[User](underlying)
 
@@ -42,8 +43,11 @@ object Example extends App {
     val get2 = userCache.get("chris")
     println(s"Get: ${Await.result(get2, Duration.Inf)}")
 
-    println(s"Caching: ${Await.result(userCache.caching[Future]("dave")(){ User(456, "Dave") }, Duration.Inf)}")
-    println(s"Caching: ${Await.result(userCache.cachingF("bob")(){ Future { Thread.sleep(1000); User(789, "Bob") } }, Duration.Inf)}")
+    val dave = userCache.caching("dave")(){ User(456, "Dave") }
+    println(s"Caching: ${Await.result(dave, Duration.Inf)}")
+
+    val bob = userCache.cachingF("bob")(){ Future { Thread.sleep(1000); User(789, "Bob") } }
+    println(s"CachingF: ${Await.result(bob, Duration.Inf)}")
   }
 
   println("---")

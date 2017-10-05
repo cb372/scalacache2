@@ -7,19 +7,22 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scalacache.CacheConfig
 import scalacache.serialization.defaultCodecs._
-import scalacache.modes.scalaFuture._
 
 case class User(id: Int, name: String)
 
 object Example extends App {
 
   implicit val cacheConfig = CacheConfig()
+  import scalacache.modes.scalaFuture._
 
   val underlying = new MemcachedClient(new BinaryConnectionFactory(), AddrUtil.getAddresses("localhost:11211"))
   val userCache = new MemcachedCache[User](underlying)
 
-  println(Await.result(userCache.put[Future]("chris")(User(123, "Chris")), Duration.Inf))
-  println(Await.result(userCache.get[Future]("chris"), Duration.Inf))
+  val put = userCache.put("chris")(User(123, "Chris"))
+  println(Await.result(put, Duration.Inf))
+
+  val get = userCache.get("chris")
+  println(Await.result(get, Duration.Inf))
 
   underlying.shutdown()
 }

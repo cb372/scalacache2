@@ -8,20 +8,20 @@ import net.spy.memcached.internal.{GetCompletionListener, GetFuture, OperationCo
 import scala.concurrent.duration.Duration
 import scala.language.higherKinds
 import scala.util.control.NonFatal
-import scalacache.{AbstractCache, CacheConfig, Mode, MonadErrorAsync}
+import scalacache.{AbstractCache, CacheConfig, Mode, Async}
 import scalacache.serialization.Codec
 
 class MemcachedCache[V](
                                         client: MemcachedClient,
                                         keySanitizer: MemcachedKeySanitizer = ReplaceAndTruncateSanitizer())
                                       (implicit val config: CacheConfig, codec: Codec[V, Array[Byte]])
-  extends AbstractCache[V, MonadErrorAsync]
+  extends AbstractCache[V, Async]
   with MemcachedTTLConverter {
 
-  protected def getWithKey[F[_]](key: String)(implicit mode: Mode[F, MonadErrorAsync]): F[Option[V]] = {
+  protected def getWithKey[F[_], G[_]](key: String)(implicit mode: Mode[F, G, Async]): F[Option[V]] = {
     import mode._
 
-    M.async { cb =>
+    S.async { cb =>
       def success(value: Option[V]): Unit = cb(Right(value))
       def error(e: Throwable): Unit = cb(Left(e))
 
@@ -47,10 +47,10 @@ class MemcachedCache[V](
     }
   }
 
-  protected def putWithKey[F[_]](key: String, value: V, ttl: Option[Duration])(implicit mode: Mode[F, MonadErrorAsync]): F[Unit] = {
+  protected def putWithKey[F[_], G[_]](key: String, value: V, ttl: Option[Duration])(implicit mode: Mode[F, G, Async]): F[Unit] = {
     import mode._
 
-    M.async { cb =>
+    S.async { cb =>
       def success(): Unit = cb(Right(()))
       def error(e: Throwable): Unit = cb(Left(e))
 
