@@ -38,4 +38,18 @@ object MonixExample extends App {
     println(cache.get("my-sync-key").getOrElse("not found"))
   }
 
+  {
+    import scalacache.scalaz.modes.task
+
+    val putAndThenGet =
+      for {
+        _ <- cache.put("my-scalaz-key")("hello scalaz!")
+        value <- cache.get("my-scalaz-key")
+      } yield value.getOrElse("not found")
+
+    println(putAndThenGet.unsafePerformSync)
+  }
+
+  underlying.shutdown()
+
 }

@@ -17,7 +17,7 @@ val moduleSettings = commonSettings ++ Seq(
 
 lazy val root = project.in(file("."))
   .settings(commonSettings)
-  .aggregate(core, caffeine, memcached, example)
+  .aggregate(core, caffeine, memcached, catsEffect, monix, scalaz, example)
 
 def module(name: String) = Project(s"$name", file(s"modules/$name"))
   .settings(moduleSettings)
@@ -25,7 +25,7 @@ def module(name: String) = Project(s"$name", file(s"modules/$name"))
 lazy val core = module("core")
   .settings(
     libraryDependencies ++= Seq(
-      "org.typelevel" %% "cats-core" % "0.9.0"
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value
     )
   )
 
@@ -57,5 +57,12 @@ lazy val monix = module("monix")
     )
   ).dependsOn(core, catsEffect)
 
+lazy val scalaz = module("scalaz")
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.scalaz" %% "scalaz-concurrent" % "7.2.15"
+    )
+  ).dependsOn(core)
+
 lazy val example = module("example")
-  .dependsOn(memcached, catsEffect, monix)
+  .dependsOn(memcached, catsEffect, monix, scalaz)
